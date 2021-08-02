@@ -97,7 +97,7 @@ eccube_setup: &eccube_setup |
 install:
   - *install_eccube
   - *eccube_setup
-  - composer require --dev kiy0taka/eccube4-test-fixer
+  - composer require --dev nanasess/eccube4-test-fixer
 
 script: |
    if [[ ! $ECCUBE_VERSION = '4.1' ]]
