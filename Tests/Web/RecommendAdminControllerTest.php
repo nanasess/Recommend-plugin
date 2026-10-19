@@ -416,6 +416,45 @@ final class RecommendAdminControllerTest extends AbstractAdminWebTestCase
         $this->assertSame($recommendId, $this->getRecommend(2)->getId());
     }
 
+    /**
+     * @return iterable<string, array{array<string, string>}>
+     */
+    public static function editWithoutProductProvider(): iterable
+    {
+        yield '商品が空' => [['Product' => '']];
+        yield '商品が無い' => [[]];
+    }
+
+    /**
+     * 編集で商品を送らなければ, 500 にせず入力エラーにし, おすすめ商品を更新しない.
+     *
+     * @param array<string, string> $fields
+     */
+    #[DataProvider('editWithoutProductProvider')]
+    public function testRecommendEditWithoutProduct(array $fields): void
+    {
+        $recommendId = $this->Recommend2->getId();
+
+        $crawler = $this->client->request(
+            Request::METHOD_POST,
+            $this->generateUrl('plugin_recommend_edit', ['id' => $recommendId]),
+            [
+                'recommend_product' => $fields + [
+                    '_token' => 'dummy',
+                    'comment' => 'comment',
+                ],
+            ]
+        );
+
+        $this->assertSame(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
+        $this->assertStringContainsString('商品を追加してください。', $crawler->filter('.card-body')->html());
+        $this->entityManager->clear();
+        $Recommend = $this->recommendProductRepository->find($recommendId);
+        $this->assertInstanceOf(RecommendProduct::class, $Recommend);
+        $this->assertSame(2, $Recommend->getProduct()?->getId());
+        $this->assertNotSame('comment', $Recommend->getComment());
+    }
+
     public function testMoveRank(): void
     {
         $this->client->request(
